@@ -32,7 +32,7 @@
 
 import { from } from 'cell-runtime';
 
-const TS = require('$/node_modules/typescript/lib/typescript.js');
+const TS = require('$/node_modules/typescript');
 
 class CellCompilerHost
 {
@@ -64,7 +64,20 @@ class CellCompilerHost
 
 	getDefaultLibFileName(options)
 	{
-		return "$/node_modules/typescript/lib/lib.d.ts";
+		// note: the `full` variants include `dom` (browser bindings), which we don't actually
+		//       want--but it's best that we match the behavior of tsc.  the developer can provide
+		//       `lib` explicitly in their configuration, and this is recommended anyway for the
+		//       sake of cross-compatibility with other TypeScript tooling.
+		const libPath = '$/node_modules/typescript/lib/';
+		const libFileName = options.target == 99 ? 'lib.esnext.full.d.ts'
+			: options.target == 7 ? 'lib.es2020.full.d.ts'
+			: options.target == 6 ? 'lib.es2019.full.d.ts'
+			: options.target == 5 ? 'lib.es2018.full.d.ts'
+			: options.target == 4 ? 'lib.es2017.full.d.ts'
+			: options.target == 3 ? 'lib.es2016.full.d.ts'
+			: options.target == 2 ? 'lib.es6.d.ts'
+			: 'lib.d.ts';
+		return FS.fullPath(libFileName, libPath);
 	}
 
 	getNewLine()
@@ -81,13 +94,13 @@ class CellCompilerHost
 	readDirectory(directoryName, extensions, excludePaths, includePaths, depth)
 	{
 		return from(new DirectoryStream(directoryName, { recursive: true }))
+			.where(it => !it.isDirectory)
+			.where(it => extensions.includes(FS.extensionOf(it.fullPath)))
 			.where(it => {
 				// implicitly exclude node_modules, etc.
 				return !from(TS.commonPackageFolders)
 					.any(dirName => it.fullPath.includes(`${dirName}/`));
 			})
-			.where(it => !it.isDirectory)
-			.where(it => extensions.includes(FS.extensionOf(it.fullPath)))
 			.where(it => !FS.match(it.fullPath, excludePaths))
 			.where(it => FS.match(it.fullPath, includePaths))
 			.select(it => it.fullPath)
@@ -119,7 +132,7 @@ const tsTool = new Tool((outFileName, inFileNames) => {
 	const jobInfo = TS.parseJsonConfigFileContent(configFile.config, compilerHost, basePath);
 	jobInfo.options.noEmit = false;
 	jobInfo.options.outDir = outFileName;
-	jobInfo.options.rootDir = '$/';
+	jobInfo.options.rootDir = basePath;
 
 	const program = TS.createProgram(jobInfo.fileNames, jobInfo.options, compilerHost);
     program.emit();
