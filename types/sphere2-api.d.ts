@@ -177,6 +177,27 @@ interface DirectoryStreamOptions
 }
 
 /**
+ * Specifies options for creating a new `Font` object.
+ */
+interface FontOptions
+{
+	/**
+	 * `true` if text rendered with the font should be antialiased.  Antialiasing generally doesn't
+	 * look good with small font sizes, but begins to show a benefit at larger sizes. As such, it's
+	 * recommended that this option only be used in high-resolution games.
+	 * @default false
+	 */
+	antialias?: boolean;
+
+	/**
+	 * `true` to enable automatic kerning. Kerning adjusts the spacing between each character so the
+	 * distance between adjacent characters appears uniform.
+	 * @default true
+	 * */
+	kern?: boolean;
+}
+
+/**
  * Specifies scheduling options for a recurring Dispatch job.
  */
 interface JobOptions
@@ -934,9 +955,12 @@ declare class Font
 	 * Load a font in the background and construct a new `Font` for it once it's ready.
 	 * @async
 	 * @param fileName SphereFS path of an RFN format font file.
+	 * @param size     The size of the font when rendered, in pixels (not points!). Has no effect
+	 *                 for RFN fonts.
+	 * @param options  Options for creating the `Font` object.
 	 * @returns A promise for a newly constructed `Font` object.
 	 */
-	static fromFile(fileName: string): Promise<Font>;
+	static fromFile(fileName: string, size?: number, options?: FontOptions): Promise<Font>;
 
 	/** SphereFS path of the file from which this `Font` was constructed. */
 	readonly fileName: string;
@@ -948,8 +972,11 @@ declare class Font
 	 * Construct a new `Font` from a given font file. The font is usable immediately, but text will
 	 * not be rendered until it loads completely.
 	 * @param fileName SphereFS path of an RFN format font file.
+	 * @param size     The size of the font when rendered, in pixels (not points!). Has no effect
+	 *                 for RFN fonts.
+	 * @param options  Options for creating the `Font` object.
 	 */
-	constructor(fileName: string);
+	constructor(fileName: string, size?: number, options?: FontOptions);
 
 	/**
 	 * Render text to a surface using this font.
