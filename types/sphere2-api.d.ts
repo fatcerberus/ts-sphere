@@ -943,8 +943,8 @@ declare class FileStream
 }
 
 /**
- * Represents a font in the RFN font format. This is a raster font format, so all text metrics are
- * in pixels.
+ * Represents a font for rendering text. This can be either RFN (Sphere raster font format) or a
+ * TrueType font.
  */
 declare class Font
 {
@@ -991,7 +991,7 @@ declare class Font
 	drawText(surface: Surface, x: number, y: number, text: string, color?: Color, wrapWidth?: number): void;
 
 	/**
-	 * Get the width and height of a text as drawn with this font when using word wrapping.
+	 * Get the width and height, in pixels, of a text as drawn with this font.
 	 * @param text      The text to be measured.
 	 * @param wrapWidth Maximum width at which to wrap the text, in pixels.
 	 * @returns A `Size2D` object with the measured width and height of the text.
@@ -999,14 +999,14 @@ declare class Font
 	getTextSize(text: string, wrapWidth: number): Size2D;
 
 	/**
-	 * Get the height of a text as drawn with this font using a given `wrapWidth`.
+	 * Get the height of a text, in pixels, as drawn with this font using a given `wrapWidth`.
 	 * @param text      The text to be measured.
 	 * @param wrapWidth The maximum width at which to wrap the text, in pixels.
 	 */
 	heightOf(text: string, wrapWidth?: number): number;
 
 	/**
-	 * Get the width of a single line of text as drawn with this font.
+	 * Get the width of a single line of text as drawn with this font, in pixels.
 	 * @param text The text to be measured.
 	 * @returns The width of the text when rendered, in pixels.
 	 */
