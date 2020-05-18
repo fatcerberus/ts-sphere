@@ -919,7 +919,13 @@ declare namespace FS
  */
 declare class FileStream
 {
-	static open(fileName: string, fileOp: FileOp): Promise<FileStream>;
+	/**
+	 * Opens a file asynchronously and returns a promise for a `FileStream` that
+	 * provides access to the contents of the file.
+	 * @param filename refers to the SphereFS path to the file
+	 * @param fileOp specifies the file operation requested.
+	 */
+	static fromFile(fileName: string, fileOp: FileOp): Promise<FileStream>;
 
 	constructor(fileName: string, fileOp: FileOp)
 
@@ -2043,6 +2049,14 @@ declare module 'data-stream'
 	 */
 	class DataStream
 	{
+		/**
+		 * Opens a file asynchronously and returns a promise for a `DataStream` that
+		 * provides access to the contents of the file.
+		 * @param filename refers to the SphereFS path to the file
+		 * @param fileOp specifies the file operation requested.
+		 */
+		static fromFile(filename:string, fileOp:FileOp):Promise<DataStream>;
+
 		constructor(filename:string, fileOp:FileOp);
 
 		/**
