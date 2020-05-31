@@ -83,7 +83,7 @@ declare namespace Sphere
 	let main: any;
 
 	/** Abort execution immediately with an error message. This error will not be catchable. */
-	function abort(message: string): void;
+	function abort(message: any): void;
 
 	/** Get the number of frames elapsed since the engine started. */
 	function now(): number;
@@ -919,7 +919,13 @@ declare namespace FS
  */
 declare class FileStream
 {
-	static open(fileName: string, fileOp: FileOp): Promise<FileStream>;
+	/**
+	 * Opens a file asynchronously and returns a promise for a `FileStream` that
+	 * provides access to the contents of the file.
+	 * @param filename refers to the SphereFS path to the file
+	 * @param fileOp specifies the file operation requested.
+	 */
+	static fromFile(fileName: string, fileOp: FileOp): Promise<FileStream>;
 
 	constructor(fileName: string, fileOp: FileOp)
 
@@ -996,7 +1002,7 @@ declare class Font
 	 * @param wrapWidth Maximum width at which to wrap the text, in pixels.
 	 * @returns A `Size2D` object with the measured width and height of the text.
 	 */
-	getTextSize(text: string, wrapWidth: number): Size2D;
+	getTextSize(text: string, wrapWidth?: number): Size2D;
 
 	/**
 	 * Get the height of a text, in pixels, as drawn with this font using a given `wrapWidth`.
@@ -1924,6 +1930,7 @@ declare namespace Z
 declare module 'sphere-runtime'
 {
 	export { default as Console } from 'console';
+	export { default as DataStream } from 'data-stream';
 	export { default as FocusTarget } from 'focus-target';
 	export { default as from, Query } from 'from';
 	export { default as Logger } from 'logger';
@@ -2016,6 +2023,208 @@ declare module 'console'
 		 * @param name
 		 */
 		undefineObject(name: string): void;
+	}
+}
+
+
+interface FieldDescriptor {
+	type: 'bool'|'float32be'|'float32le'|'float64be'|'float64le'|'int8'|'int16be'|'int16le'|'int32be'|'int32le'|'uint8'|'uint16be'|'uint16le'|'uint32be'|'uint32le'|'fstring'|'lstr8'|'lstr16be'|'lstr16le'|'lstr32be'|'lstr32le'|'raw'
+	length?: number;
+	size?: number;
+}
+
+interface FileDescriptor {
+	[key: string]: FieldDescriptor;
+}
+
+declare module 'data-stream'
+{
+	export default DataStream;
+
+	/**
+	 * Allows you to read from structured binary files like those used for Sphere game
+	 * assets (maps, tilesets, etc.) based on a simple JSON read individual binary values
+	 * from the file.
+	 * @see FileStream
+	 */
+	class DataStream
+	{
+		/**
+		 * Opens a file asynchronously and returns a promise for a `DataStream` that
+		 * provides access to the contents of the file.
+		 * @param filename refers to the SphereFS path to the file
+		 * @param fileOp specifies the file operation requested.
+		 */
+		static fromFile(filename:string, fileOp:FileOp):Promise<DataStream>;
+
+		constructor(filename:string, fileOp:FileOp);
+
+		/**
+		 * Reads an IEEE floating point value from the data file.
+		 * @param littleEndian Reads the file in little-endian mode if true.
+		 */
+		readFloat32(littleEndian?:boolean):number;
+		/**
+		 * Reads an IEEE floating point value from the data file.
+		 * @param littleEndian Reads the file in little-endian mode if true.
+		 */
+		readFloat64(littleEndian?:boolean):number;
+
+		/**
+		 * Reads an 8-bit signed integer (-128 to 127) value from the data file.
+		 */
+		readInt8():number;
+		/**
+		 * Reads a 16-bit signed integer (-32,768 to 32,767) value from the data file.
+		 * @param littleEndian Reads in little-endian mode if true.
+		 */
+		readInt16(littleEndian?:boolean):number;
+		/**
+		 * Reads a 32-bit signed integer (-2,147,483,648 to 2,147,483,647) value from the
+		 * data file.
+		 * @param littleEndian Reads in little-endian mode if true.
+		 */
+		readInt32(littleEndian?:boolean):number;
+
+		/**
+		 * Reads an 8-bit unsigned integer (0 to 255) value from the data file.
+		 */
+		readUint8():number;
+		/**
+		 * Reads a 16-bit unsigned integer (0 to 65,535) value from the data file.
+		 * @param littleEndian Reads in little-endian mode if true.
+		 */
+		readUint16(littleEndian?:boolean):number;
+		/**
+		 * Reads a 32-bit unsigned integer (0 to 4,294,967,295) value from the data file.
+		 * @param littleEndian Reads in little-endian mode if true.
+		 */
+		readUint32(littleEndian?:boolean):number;
+
+		/**
+		 * Reads a UTF-8 string from the data file.
+		 * @param length Specifies how many bytes to read.
+		 */
+		readStringRaw(length:number):string;
+		/**
+		 * Reads a UTF-8 length-prefixed string from the data file, where the length
+		 * in bytes is stored as an unsigned integer.
+		 */
+		readString8():string;
+		/**
+		 * Reads a UTF-8 length-prefixed string from the data file, where the length
+		 * in bytes is stored as an unsigned integer.
+		 * @param littleEndian Reads the file in little-endian mode if true.
+		 */
+		readString16(littleEndian?:boolean):string;
+		/**
+		 * Reads a UTF-8 length-prefixed string from the data file, where the length
+		 * in bytes is stored as an unsigned integer.
+		 * @param littleEndian Reads the file in little-endian mode if true.
+		 */
+		readString32(littleEndian?:boolean):string;
+
+		/**
+		 * Reads an object from the data file.
+		 * @param desc An object describing the layout of the file.
+		 * @returns An object with the same fields as `desc`, whose values are based on the contents
+		 * of `desc`.
+		 * @example
+		 * // from the miniSphere runtime docs
+		 * rmp_header = myReader.readStruct({
+		 * 	signature: { type: 'fstring', length: 4 },
+		 * 	version: { type: 'uint16le' },
+		 * 	type: { type: 'uint8' },
+		 * 	numLayers: { type: 'uint8' },
+		 * 	reserved1: { type: 'raw', size: 1 },
+		 * 	numEntities: { type: 'uint16le' },
+		 * 	startX: { type: 'uint16le' },
+		 * 	startY: { type: 'uint16le' },
+		 * 	startLayer: { type: 'uint8' },
+		 * 	startDir: { type: 'uint8' },
+		 * 	numStrings: { type: 'uint16le' },
+		 * 	numZones: { type: 'uint16le' },
+		 * 	repeating: { type: 'bool' },
+		 * 	reserved2: { type: 'raw', size: 234 },
+		 * });
+		 */
+		readStruct(desc:FileDescriptor):any;
+
+		/**
+		 * Writes a 32-bit floating point value (-3.4*10^38 to 3.4*10^38) to the data file.
+		 * @param value The number to be written.
+		 * @param littleEndian Writes in little-endian mode if true.
+		*/
+		writeFloat32(value:number, littleEndian?:boolean):void;
+		/**
+		 * Writes a 64-bit floating point value (-1.7*10^308 to 1.7*10^308) to the data file.
+		 * @param value The number to be written.
+		 * @param littleEndian Writes in little-endian mode if true.
+		*/
+		writeFloat64(value:number, littleEndian?:boolean):void;
+
+		/**
+		 * Writes an 8-bit signed integer (-128 to 127) value to the data file.
+		 * @param value The number to be written.
+		 */
+		writeInt8(value:number):void;
+		/**
+		 * Writes a 16-bit signed integer (-32,768 to 32,767) value to the data file.
+		 * @param value The number to be written.
+		 * @param littleEndian Writes in little-endian mode if true.
+		 */
+		writeInt16(value:number, littleEndian?:boolean):void;
+		/**
+		 * Writes a 32-bit signed integer (-2,147,483,648 to 2,147,483,647) value to the
+		 * data file.
+		 * @param value The number to be written.
+		 * @param littleEndian Writes in little-endian mode if true.
+		 */
+		writeInt32(value:number, littleEndian?:boolean):void;
+
+		/**
+		 * Writes an 8-bit unsigned integer (0 to 255) value to the data file.
+		 * @param value The number to be written.
+		 */
+		writeUint8(value:number):void;
+		/**
+		 * Writes a 16-bit unsigned integer (0 to 65,535) value to the data file.
+		 * @param value The number to be written.
+		 * @param littleEndian Writes in little-endian mode if true.
+		 */
+		writeUint16(value:number, littleEndian?:boolean):void;
+		/**
+		 * Writes a 32-bit unsigned integer (0 to 4,294,967,295) value to the data file.
+		 * @param value The number to be written.
+		 * @param littleEndian Writes in little-endian mode if true.
+		 */
+		writeUint32(value:number, littleEndian?:boolean):void;
+
+		/**
+		 * Writes a UTF-8 string to the data file.
+		 * @param value The string written to the file.
+		 */
+		writeStringRaw(value:string):void;
+		/**
+		 * Writes a UTF-8 length-prefixed string to the data file, where the length is
+		 * stored as an unsigned integer. 
+		 * @param value The string written to the file.
+		 */
+		writeString8(value:string):void;
+		/**
+		 * Writes a UTF-8 length-prefixed string to the data file, where the length is
+		 * stored as an unsigned integer. 
+		 * @param value The string written to the file.
+		 * @param littleEndian Reads the file in little-endian mode if true.
+		 */
+		writeString16(value:string, littleEndian?:boolean):void;
+		/**
+		 * Writes a UTF-8 length-prefixed string to the data file, where the length is
+		 * stored as an unsigned integer. 
+		 * @param value The string written to the file.
+		 * @param littleEndian Reads the file in little-endian mode if true.
+		 */
+		writeString32(value:string, littleEndian?:boolean):void;
 	}
 }
 
