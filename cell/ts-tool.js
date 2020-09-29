@@ -36,6 +36,12 @@ const TS = require('$/node_modules/typescript');
 
 class CellCompilerHost
 {
+	constructor()
+	{
+		this.sources = {};
+		this.sourceMaps = {};
+	}
+
 	directoryExists(directoryName)
 	{
 		return FS.directoryExists(directoryName);
@@ -88,6 +94,8 @@ class CellCompilerHost
 	getSourceFile(fileName, target)
 	{
 		const sourceText = FS.readFile(fileName);
+		if (!fileName.endsWith('.d.ts') && !fileName.includes('node_modules/'))
+			SSj.addSource(fileName, sourceText);
 		return TS.createSourceFile(fileName, sourceText, target);
 	}
 
@@ -119,22 +127,28 @@ class CellCompilerHost
 
 	writeFile(fileName, content)
 	{
-		FS.createDirectory(FS.directoryOf(fileName));
-		FS.writeFile(fileName, content);
+		if (fileName.endsWith('.map')) {
+			fileName = fileName.slice(0, -4);
+			SSj.sourceMap(fileName, content);
+		}
+		else {
+			FS.createDirectory(FS.directoryOf(fileName));
+			FS.writeFile(fileName, content);
+		}
 	}
 }
 
 const tsTool = new Tool((outFileName, inFileNames) => {
-	const compilerHost = new CellCompilerHost();
+	const host = new CellCompilerHost();
 
 	const basePath = FS.directoryOf(inFileNames[0]);
 	const configFile = TS.readConfigFile(inFileNames[0], FS.readFile);
-	const jobInfo = TS.parseJsonConfigFileContent(configFile.config, compilerHost, basePath);
+	const jobInfo = TS.parseJsonConfigFileContent(configFile.config, host, basePath);
 	jobInfo.options.noEmit = false;
 	jobInfo.options.outDir = outFileName;
 	jobInfo.options.rootDir = basePath;
 
-	const program = TS.createProgram(jobInfo.fileNames, jobInfo.options, compilerHost);
+	const program = TS.createProgram(jobInfo.fileNames, jobInfo.options, host);
     program.emit();
     const diags = TS.getPreEmitDiagnostics(program);
     for (const diag of diags) {
@@ -148,7 +162,7 @@ const tsTool = new Tool((outFileName, inFileNames) => {
 			error(message);
 		else
 			warn(message);
-    }
+	}
 }, `compiling TypeScript (${TS.version})`);
 
 export
