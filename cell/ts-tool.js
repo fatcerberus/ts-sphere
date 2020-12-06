@@ -107,7 +107,7 @@ class CellCompilerHost
 			.where(it => {
 				// implicitly exclude node_modules, etc.
 				return !from(TS.commonPackageFolders)
-					.any(dirName => it.fullPath.includes(`${dirName}/`));
+					.any(dirName => it.fullPath.includes(`${dirName}/`) && !it.fullPath.includes("@types/"));
 			})
 			.where(it => !FS.match(it.fullPath, excludePaths))
 			.where(it => FS.match(it.fullPath, includePaths))

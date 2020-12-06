@@ -5,7 +5,7 @@
  * and packaging games.
  */
 
-import { tsc } from './cell/ts-tool';
+import { tsc } from './cell/ts-tool.js';
 
 // describe the game we're building.  everything in Sphere.Game gets written to
 // the game manifest (game.json) at the end of the build.
